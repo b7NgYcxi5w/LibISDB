@@ -32,6 +32,8 @@ extern "C" {
 #include "../../../../../Thirdparty/a52dec/liba52/a52_internal.h"
 }
 
+#include <bit>
+
 #include "../../../../Base/DebugDef.hpp"
 
 
@@ -45,10 +47,10 @@ namespace LibISDB::DirectShow
 namespace
 {
 
-inline int16_t SampleToInt16(float Sample)
+constexpr int16_t SampleToInt16(float Sample)
 {
-	static_assert(sizeof(float) == sizeof(uint32_t));
-	const int32_t i = *reinterpret_cast<int32_t *>(&Sample);
+	static_assert(std::numeric_limits<float>::is_iec559);
+	const int32_t i = std::bit_cast<int32_t>(Sample);
 	if (i > 0x43C07FFF_i32)
 		return 32767;
 	if (i < 0x43BF8000_i32)
@@ -277,7 +279,7 @@ bool AC3Decoder::DecodeFrame(const uint8_t *pData, size_t *pDataSize, ReturnArg<
 
 	if (m_FramePos < 7) {
 		// a52_syncinfo に7バイト必要
-		int Remain = std::min(static_cast<int>(DataSize - Pos), 7 - m_FramePos);
+		const int Remain = std::min(static_cast<int>(DataSize - Pos), 7 - m_FramePos);
 		std::memcpy(&m_FrameBuffer[m_FramePos], &pData[Pos], Remain);
 		m_FramePos += Remain;
 		if (m_FramePos < 7)
@@ -312,7 +314,7 @@ bool AC3Decoder::DecodeFrame(const uint8_t *pData, size_t *pDataSize, ReturnArg<
 		}
 	}
 
-	int Remain = std::min(static_cast<int>(DataSize - Pos), m_FrameLength - m_FramePos);
+	const int Remain = std::min(static_cast<int>(DataSize - Pos), m_FrameLength - m_FramePos);
 	std::memcpy(&m_FrameBuffer[m_FramePos], &pData[Pos], Remain);
 	m_FramePos += Remain;
 	if (m_FramePos < m_FrameLength)

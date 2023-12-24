@@ -140,6 +140,7 @@
 #include <string_view>
 #include <type_traits>
 #include <optional>
+#include <concepts>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -149,9 +150,12 @@
 #include <cwchar>
 #endif
 
-#include "Templates/cstring_view.hpp"
-#include "Templates/EnumFlags.hpp"
-#include "Templates/ReturnArg.hpp"
+#include <bit>
+#ifdef LIBISDB_MSB_FIRST
+static_assert(std::endian::native == std::endian::big);
+#else
+static_assert(std::endian::native == std::endian::little);
+#endif
 
 
 #ifdef LIBISDB_DEBUG
@@ -251,38 +255,32 @@ namespace LibISDB
 #define LIBISDB_CHAR(c) c
 #endif
 
-#ifdef LIBISDB_WINDOWS
-#define LIBISDB_PRIs "hs"
-#define LIBISDB_PRIc "hc"
-#else
-#define LIBISDB_PRIs "s"
-#define LIBISDB_PRIc "c"
-#endif
-#define LIBISDB_PRIls "ls"
-#define LIBISDB_PRIlc "lc"
-
-#if defined(LIBISDB_WINDOWS) && (!defined(LIBISDB_WCHAR) || !defined(_CRT_STDIO_ISO_WIDE_SPECIFIERS))
-#define LIBISDB_PRIS "s"
-#define LIBISDB_PRIC "c"
-#else
-#ifdef LIBISDB_WCHAR
-#define LIBISDB_PRIS LIBISDB_PRIls
-#define LIBISDB_PRIC LIBISDB_PRIlc
-#else
-#define LIBISDB_PRIS LIBISDB_PRIs
-#define LIBISDB_PRIC LIBISDB_PRIc
-#endif
-#endif
-
 #ifndef LIBISDB_NEWLINE
 #define LIBISDB_NEWLINE "\n"
 #endif
 
 	typedef std::basic_string<CharType> String;
 	typedef std::basic_string_view<CharType> StringView;
-	typedef basic_cstring_view<CharType> CStringView;
+
+	template<typename T> inline constexpr bool IsEnumClass =
+		std::bool_constant<std::is_enum_v<T> && !std::is_convertible_v<T, int>>::value;
+
+	namespace Concept
+	{
+
+		template<typename T> concept Pointer = std::is_pointer_v<T>;
+		template<typename T> concept PointerNullable = std::is_pointer_v<T> || std::is_null_pointer_v<T>;
+		template<typename T> concept Reference = std::is_reference_v<T>;
+		template<typename T> concept Enum = std::is_enum_v<T>;
+		template<typename T> concept EnumClass = IsEnumClass<T>;
+
+	}	// namespace Concept
 
 }	// namespace LibISDB
+
+
+#include "Templates/EnumFlags.hpp"
+#include "Templates/ReturnArg.hpp"
 
 
 #endif	// ifndef LIBISDB_BASE_H

@@ -71,7 +71,7 @@ bool OneSegPATGenerator::StorePacket(const TSPacket *pPacket)
 			if ((PID != PID_NIT) && !m_HasPAT) {
 				if (!m_GeneratePAT) {
 					// PMTがPAT_GEN_PMT_COUNT回来る間にPATが来なければPATが無いとみなす
-					static const uint8_t PAT_GEN_PMT_COUNT = 5;
+					constexpr uint8_t PAT_GEN_PMT_COUNT = 5;
 					const int Index = PID - ONESEG_PMT_PID_FIRST;
 
 					if (m_PMTCount[Index] < PAT_GEN_PMT_COUNT) {
@@ -159,7 +159,7 @@ bool OneSegPATGenerator::GetPATPacket(TSPacket *pPacket)
 	std::memset(&pData[Pos], 0xFF, TS_PACKET_SIZE - Pos);
 
 #ifdef LIBISDB_DEBUG
-	TSPacket::ParseResult Result = pPacket->ParsePacket();
+	const TSPacket::ParseResult Result = pPacket->ParsePacket();
 	LIBISDB_ASSERT(Result == TSPacket::ParseResult::OK);
 #else
 	pPacket->ParsePacket();

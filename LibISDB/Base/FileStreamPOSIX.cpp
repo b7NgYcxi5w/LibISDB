@@ -109,7 +109,7 @@ namespace LibISDB
 {
 
 
-FileStreamPOSIX::FileStreamPOSIX()
+FileStreamPOSIX::FileStreamPOSIX() noexcept
 	: m_File(-1)
 	, m_EOF(false)
 	, m_Closer(DefaultCloser())
@@ -117,7 +117,7 @@ FileStreamPOSIX::FileStreamPOSIX()
 }
 
 
-FileStreamPOSIX::FileStreamPOSIX(const Closer &closer)
+FileStreamPOSIX::FileStreamPOSIX(const Closer &closer) noexcept
 	: m_File(-1)
 	, m_EOF(false)
 	, m_Closer(closer)
@@ -131,7 +131,7 @@ FileStreamPOSIX::~FileStreamPOSIX()
 }
 
 
-bool FileStreamPOSIX::Open(const CStringView &FileName, OpenFlag Flags)
+bool FileStreamPOSIX::Open(const String &FileName, OpenFlag Flags)
 {
 	if (m_File >= 0) {
 		SetError(std::errc::operation_in_progress);
@@ -186,9 +186,8 @@ bool FileStreamPOSIX::Open(const CStringView &FileName, OpenFlag Flags)
 	}
 
 	LIBISDB_TRACE(
-		LIBISDB_STR("FileStreamPOSIX::Open() : Open file \"%")
-			LIBISDB_STR(LIBISDB_PRIS) LIBISDB_STR("\" %x %x\n"),
-		FileName.c_str(), OFlags, Share);
+		LIBISDB_STR("FileStreamPOSIX::Open() : Open file \"{}\" {:x} {:x}\n"),
+		FileName, OFlags, Share);
 
 	const ::errno_t Err =
 #ifdef LIBISDB_WCHAR
@@ -226,9 +225,8 @@ bool FileStreamPOSIX::Open(const CStringView &FileName, OpenFlag Flags)
 		OFlags |= O_APPEND;
 
 	LIBISDB_TRACE(
-		LIBISDB_STR("FileStreamPOSIX::Open() : Open file \"%")
-			LIBISDB_STR(LIBISDB_PRIS) LIBISDB_STR("\" %x\n"),
-		FileName.c_str(), OFlags);
+		LIBISDB_STR("FileStreamPOSIX::Open() : Open file \"{}\" {:x}\n"),
+		FileName, OFlags);
 
 	m_File = ::open(FileName.c_str(), OFlags);
 	if (m_File < 0) {
@@ -325,7 +323,7 @@ FileStreamPOSIX::SizeType FileStreamPOSIX::GetSize()
 		return 0;
 	}
 
-	off64_t Size = filelength64(m_File);
+	const off64_t Size = filelength64(m_File);
 	if (Size < 0) {
 		return 0;
 	}

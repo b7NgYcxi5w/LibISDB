@@ -130,7 +130,7 @@ bool PESPacket::ParseHeader()
 }
 
 
-void PESPacket::Reset()
+void PESPacket::Reset() noexcept
 {
 	ClearSize();
 
@@ -198,7 +198,7 @@ size_t PESPacket::GetPayloadSize() const
 
 
 
-PESParser::PESParser(PacketHandler *pPacketHandler)
+PESParser::PESParser(PacketHandler *pPacketHandler) noexcept
 	: m_pPacketHandler(pPacketHandler)
 	, m_PESPacket(0x10005_z)
 	, m_IsStoring(false)
@@ -240,7 +240,7 @@ bool PESParser::StorePacket(const TSPacket *pPacket)
 }
 
 
-void PESParser::Reset()
+void PESParser::Reset() noexcept
 {
 	m_PESPacket.Reset();
 	m_IsStoring = false;
@@ -262,7 +262,7 @@ uint8_t PESParser::StoreHeader(const uint8_t *pPayload, uint8_t Remain)
 	if (m_IsStoring)
 		return 0;
 
-	const uint8_t HeaderRemain = (uint8_t)(9 - m_PESPacket.GetSize());
+	const uint8_t HeaderRemain = static_cast<uint8_t>(9 - m_PESPacket.GetSize());
 
 	if (Remain >= HeaderRemain) {
 		// ヘッダストア完了、ヘッダを解析してペイロードのストアを開始する

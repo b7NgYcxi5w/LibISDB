@@ -111,7 +111,7 @@ AudioDecoderFilter::AudioDecoderFilter(LPUNKNOWN pUnk, HRESULT *phr)
 
 	, m_pSampleCallback(nullptr)
 {
-	LIBISDB_TRACE(LIBISDB_STR("AudioDecoderFilter::AudioDecoderFilter %p\n"), this);
+	LIBISDB_TRACE(LIBISDB_STR("AudioDecoderFilter::AudioDecoderFilter {}\n"), static_cast<void *>(this));
 
 	*phr = S_OK;
 
@@ -240,7 +240,7 @@ HRESULT AudioDecoderFilter::DecideBufferSize(IMemAllocator *pAllocator, ALLOCATO
 
 	// アロケータプロパティを設定しなおす
 	ALLOCATOR_PROPERTIES Actual;
-	HRESULT hr = pAllocator->SetProperties(pprop, &Actual);
+	const HRESULT hr = pAllocator->SetProperties(pprop, &Actual);
 	if (FAILED(hr))
 		return hr;
 
@@ -298,7 +298,7 @@ HRESULT AudioDecoderFilter::StopStreaming()
 
 HRESULT AudioDecoderFilter::BeginFlush()
 {
-	HRESULT hr = CTransformFilter::BeginFlush();
+	const HRESULT hr = CTransformFilter::BeginFlush();
 
 	CAutoLock AutoLock(&m_cPropLock);
 
@@ -314,7 +314,7 @@ HRESULT AudioDecoderFilter::BeginFlush()
 
 HRESULT AudioDecoderFilter::NewSegment(REFERENCE_TIME tStart, REFERENCE_TIME tStop, double dRate)
 {
-	HRESULT hr = CTransformFilter::NewSegment(tStart, tStop, dRate);
+	const HRESULT hr = CTransformFilter::NewSegment(tStart, tStop, dRate);
 
 	CAutoLock AutoLock(&m_cPropLock);
 
@@ -356,14 +356,14 @@ HRESULT AudioDecoderFilter::Transform(IMediaSample *pIn, IMediaSample *pOut)
 			} else if ((m_StartTime >= 0)
 					&& (std::llabs(rtStart - m_StartTime) > MAX_JITTER)) {
 				LIBISDB_TRACE(
-					LIBISDB_STR("Resync audio stream time (%lld -> %lld [%f])\n"),
+					LIBISDB_STR("Resync audio stream time ({} -> {} [{}])\n"),
 					m_StartTime, rtStart,
 					static_cast<double>(rtStart - m_StartTime) / static_cast<double>(REFERENCE_TIME_SECOND));
 				m_StartTime = rtStart;
 			}
 		}
 		if ((m_StartTime < 0) || m_Discontinuity) {
-			LIBISDB_TRACE(LIBISDB_STR("Initialize audio stream time (%lld)\n"), rtStart);
+			LIBISDB_TRACE(LIBISDB_STR("Initialize audio stream time ({})\n"), rtStart);
 			m_StartTime = rtStart;
 		}
 	}
@@ -410,7 +410,7 @@ HRESULT AudioDecoderFilter::Transform(IMediaSample *pIn, IMediaSample *pOut)
 				LIBISDB_TRACE(LIBISDB_STR("出力メディアタイプを更新します。\n"));
 				hr = m_pOutput->SetMediaType(&SampleInfo.MediaType);
 				if (FAILED(hr)) {
-					LIBISDB_TRACE(LIBISDB_STR("出力メディアタイプを設定できません。(%08x)\n"), hr);
+					LIBISDB_TRACE(LIBISDB_STR("出力メディアタイプを設定できません。({:08x})\n"), hr);
 					break;
 				}
 				m_MediaType = SampleInfo.MediaType;
@@ -421,7 +421,7 @@ HRESULT AudioDecoderFilter::Transform(IMediaSample *pIn, IMediaSample *pOut)
 			IMediaSample *pOutSample = nullptr;
 			hr = m_pOutput->GetDeliveryBuffer(&pOutSample, nullptr, nullptr, 0);
 			if (FAILED(hr)) {
-				LIBISDB_TRACE(LIBISDB_STR("出力メディアサンプルを取得できません。(%08x)\n"), hr);
+				LIBISDB_TRACE(LIBISDB_STR("出力メディアサンプルを取得できません。({:08x})\n"), hr);
 				break;
 			}
 
@@ -432,7 +432,7 @@ HRESULT AudioDecoderFilter::Transform(IMediaSample *pIn, IMediaSample *pOut)
 			BYTE *pOutBuff = nullptr;
 			hr = pOutSample->GetPointer(&pOutBuff);
 			if (FAILED(hr)) {
-				LIBISDB_TRACE(LIBISDB_STR("出力サンプルのバッファを取得できません。(%08x)\n"), hr);
+				LIBISDB_TRACE(LIBISDB_STR("出力サンプルのバッファを取得できません。({:08x})\n"), hr);
 				pOutSample->Release();
 				break;
 			}
@@ -442,7 +442,7 @@ HRESULT AudioDecoderFilter::Transform(IMediaSample *pIn, IMediaSample *pOut)
 
 			if (m_StartTime >= 0) {
 				REFERENCE_TIME rtDuration, rtStart, rtEnd;
-				rtDuration = REFERENCE_TIME_SECOND * static_cast<LONGLONG>(SampleInfo.SampleCount) / FrameInfo.Info.Frequency;
+				rtDuration = REFERENCE_TIME_SECOND * static_cast<REFERENCE_TIME>(SampleInfo.SampleCount) / FrameInfo.Info.Frequency;
 				rtStart = m_StartTime;
 				m_StartTime += rtDuration;
 				// 音ずれ補正用時間シフト
@@ -485,7 +485,7 @@ HRESULT AudioDecoderFilter::Transform(IMediaSample *pIn, IMediaSample *pOut)
 			hr = m_pOutput->Deliver(pOutSample);
 #ifdef _DEBUG
 			if (FAILED(hr)) {
-				LIBISDB_TRACE(LIBISDB_STR("サンプルを送信できません。(%08x)\n"), hr);
+				LIBISDB_TRACE(LIBISDB_STR("サンプルを送信できません。({:08x})\n"), hr);
 				if (m_Passthrough && !m_PassthroughError) {
 					m_PassthroughError = true;
 					m_EventListenerList.CallEventListener(&EventListener::OnSPDIFPassthroughError, hr);
@@ -584,7 +584,9 @@ bool AudioDecoderFilter::SetDualMonoMode(DualMonoMode Mode)
 	case DualMonoMode::Main:
 	case DualMonoMode::Sub:
 	case DualMonoMode::Both:
-		LIBISDB_TRACE(LIBISDB_STR("AudioDecoderFilter::SetDualMonoMode() : Mode %d\n"), Mode);
+		LIBISDB_TRACE(
+			LIBISDB_STR("AudioDecoderFilter::SetDualMonoMode() : Mode {}\n"),
+			static_cast<std::underlying_type_t<DualMonoMode>>(Mode));
 		m_DualMonoMode = Mode;
 		if (m_DualMono)
 			SelectDualMonoStereoMode();
@@ -604,7 +606,9 @@ bool AudioDecoderFilter::SetStereoMode(StereoMode Mode)
 	case StereoMode::Left:
 	case StereoMode::Right:
 		m_StereoMode = Mode;
-		LIBISDB_TRACE(LIBISDB_STR("AudioDecoderFilter::SetStereoMode() : Stereo mode %d\n"), Mode);
+		LIBISDB_TRACE(
+			LIBISDB_STR("AudioDecoderFilter::SetStereoMode() : Stereo mode {}\n"),
+			static_cast<std::underlying_type_t<StereoMode>>(Mode));
 		return true;
 	}
 
@@ -716,7 +720,7 @@ bool AudioDecoderFilter::SetDelay(LONGLONG Delay)
 {
 	CAutoLock AutoLock(&m_cPropLock);
 
-	LIBISDB_TRACE(LIBISDB_STR("AudioDecoderFilter::SetDelay() : %lld\n"), Delay);
+	LIBISDB_TRACE(LIBISDB_STR("AudioDecoderFilter::SetDelay() : {}\n"), Delay);
 
 	m_DelayAdjustment += Delay - m_Delay;
 	m_Delay = Delay;
@@ -813,7 +817,6 @@ HRESULT AudioDecoderFilter::ProcessPCM(
 	const int OutChannels = Surround ? 6 : 2;
 
 	// メディアタイプの更新
-	bool MediaTypeChanged = false;
 	WAVEFORMATEX *pwfx = reinterpret_cast<WAVEFORMATEX *>(m_MediaType.Format());
 	if ((*m_MediaType.FormatType() != FORMAT_WaveFormatEx)
 			|| (!Surround && (pwfx->wFormatTag != WAVE_FORMAT_PCM))
@@ -917,7 +920,7 @@ HRESULT AudioDecoderFilter::ProcessPCM(
 HRESULT AudioDecoderFilter::ProcessSPDIF(
 	const AudioDecoder::AudioInfo &Info, FrameSampleInfo *pSampleInfo)
 {
-	static const int PREAMBLE_SIZE = sizeof(WORD) * 4;
+	constexpr int PREAMBLE_SIZE = sizeof(WORD) * 4;
 
 	AudioDecoder::SPDIFFrameInfo FrameInfo;
 	if (!m_Decoder->GetSPDIFFrameInfo(&FrameInfo))
@@ -928,7 +931,7 @@ HRESULT AudioDecoderFilter::ProcessSPDIF(
 	const int PacketSize = FrameInfo.SamplesPerFrame * 4;
 	if (DataBurstSize > PacketSize) {
 		LIBISDB_TRACE(
-			LIBISDB_STR("S/PDIFビットレートが不正です。(Frame size %d / Data-burst size %d / Packet size %d)\n"),
+			LIBISDB_STR("S/PDIFビットレートが不正です。(Frame size {} / Data-burst size {} / Packet size {})\n"),
 			FrameSize, DataBurstSize, PacketSize);
 		return E_FAIL;
 	}
@@ -937,7 +940,7 @@ HRESULT AudioDecoderFilter::ProcessSPDIF(
 	static bool First = true;
 	if (First) {
 		LIBISDB_TRACE(
-			LIBISDB_STR("S/PDIF出力開始(Frame size %d / Data-burst size %d / Packet size %d)\n"),
+			LIBISDB_STR("S/PDIF出力開始(Frame size {} / Data-burst size {} / Packet size {})\n"),
 			FrameSize, DataBurstSize, PacketSize);
 		First = false;
 	}
@@ -1001,7 +1004,7 @@ HRESULT AudioDecoderFilter::ProcessSPDIF(
 			pSampleInfo->pData->GetBufferSize() - PREAMBLE_SIZE);
 	if ((PayloadSize < 1) || (PREAMBLE_SIZE + PayloadSize > PacketSize)) {
 		LIBISDB_TRACE(
-			LIBISDB_STR("S/PDIF Burst-payload サイズが不正です。(Packet size %d / Payload size %d)\n"),
+			LIBISDB_STR("S/PDIF Burst-payload サイズが不正です。(Packet size {} / Payload size {})\n"),
 			PacketSize, PayloadSize);
 		return E_FAIL;
 	}
@@ -1027,17 +1030,17 @@ HRESULT AudioDecoderFilter::ReconnectOutput(long BufferSize, const CMediaType &m
 	IMemInputPin *pMemInputPin = nullptr;
 	hr = pPin->QueryInterface(IID_IMemInputPin, reinterpret_cast<void**>(&pMemInputPin));
 	if (FAILED(hr)) {
-		LIBISDB_TRACE(LIBISDB_STR("IMemInputPinインターフェースが取得できません。(%08x)\n"), hr);
+		LIBISDB_TRACE(LIBISDB_STR("IMemInputPinインターフェースが取得できません。({:08x})\n"), hr);
 	} else {
 		IMemAllocator *pAllocator = nullptr;
 		hr = pMemInputPin->GetAllocator(&pAllocator);
 		if (FAILED(hr)) {
-			LIBISDB_TRACE(LIBISDB_STR("IMemAllocatorインターフェースが取得できません。(%08x)\n"), hr);
+			LIBISDB_TRACE(LIBISDB_STR("IMemAllocatorインターフェースが取得できません。({:08x})\n"), hr);
 		} else {
 			ALLOCATOR_PROPERTIES Props;
 			hr = pAllocator->GetProperties(&Props);
 			if (FAILED(hr)) {
-				LIBISDB_TRACE(LIBISDB_STR("IMemAllocatorのプロパティが取得できません。(%08x)\n"), hr);
+				LIBISDB_TRACE(LIBISDB_STR("IMemAllocatorのプロパティが取得できません。({:08x})\n"), hr);
 			} else {
 				if ((mt != m_pOutput->CurrentMediaType())
 						|| (Props.cBuffers < NUM_SAMPLE_BUFFERS)
@@ -1049,7 +1052,7 @@ HRESULT AudioDecoderFilter::ReconnectOutput(long BufferSize, const CMediaType &m
 
 						Props.cBuffers = NUM_SAMPLE_BUFFERS;
 						Props.cbBuffer = BufferSize * 3 / 2;
-						LIBISDB_TRACE(LIBISDB_STR("バッファサイズを設定します。(%ld bytes)\n"), Props.cbBuffer);
+						LIBISDB_TRACE(LIBISDB_STR("バッファサイズを設定します。({} bytes)\n"), Props.cbBuffer);
 						if (SUCCEEDED(hr = m_pOutput->DeliverBeginFlush())
 								&& SUCCEEDED(hr = m_pOutput->DeliverEndFlush())
 								&& SUCCEEDED(hr = pAllocator->Decommit())
@@ -1057,7 +1060,7 @@ HRESULT AudioDecoderFilter::ReconnectOutput(long BufferSize, const CMediaType &m
 								&& SUCCEEDED(hr = pAllocator->Commit())) {
 							if ((ActualProps.cBuffers < Props.cBuffers)
 									|| (ActualProps.cbBuffer < BufferSize)) {
-								LIBISDB_TRACE(LIBISDB_STR("バッファサイズの要求が受け付けられません。(%ld / %ld)\n"),
+								LIBISDB_TRACE(LIBISDB_STR("バッファサイズの要求が受け付けられません。({} / {})\n"),
 										  ActualProps.cbBuffer, Props.cbBuffer);
 								hr = E_FAIL;
 								NotifyEvent(EC_ERRORABORT, hr, 0);
@@ -1066,7 +1069,7 @@ HRESULT AudioDecoderFilter::ReconnectOutput(long BufferSize, const CMediaType &m
 								hr = S_OK;
 							}
 						} else {
-							LIBISDB_TRACE(LIBISDB_STR("ピンの再接続ができません。(%08x)\n"), hr);
+							LIBISDB_TRACE(LIBISDB_STR("ピンの再接続ができません。({:08x})\n"), hr);
 						}
 					}
 				} else {
@@ -1241,7 +1244,7 @@ size_t AudioDecoderFilter::DownMixSurround(int16_t *pDst, const int16_t *pSrc, s
 				Data[i] = static_cast<double>(pSrc[Pos * 6 + ChannelMap[i]]);
 
 			for (int i = 0; i < 2; i++) {
-				int Value = static_cast<int>((
+				const int Value = static_cast<int>((
 					Data[0] * m_DownMixMatrix.Matrix[i][0] +
 					Data[1] * m_DownMixMatrix.Matrix[i][1] +
 					Data[2] * m_DownMixMatrix.Matrix[i][2] +
@@ -1258,14 +1261,14 @@ size_t AudioDecoderFilter::DownMixSurround(int16_t *pDst, const int16_t *pSrc, s
 		m_Decoder->GetDownmixInfo(&Info);
 
 		for (size_t Pos = 0; Pos < Samples; Pos++) {
-			int Left = static_cast<int>((
+			const int Left = static_cast<int>((
 				static_cast<double>(pSrc[Pos * 6 + ChannelMap[AudioDecoder::CHANNEL_6_FL ]]) * Info.Front +
 				static_cast<double>(pSrc[Pos * 6 + ChannelMap[AudioDecoder::CHANNEL_6_BL ]]) * Info.Rear +
 				static_cast<double>(pSrc[Pos * 6 + ChannelMap[AudioDecoder::CHANNEL_6_FC ]]) * Info.Center +
 				static_cast<double>(pSrc[Pos * 6 + ChannelMap[AudioDecoder::CHANNEL_6_LFE]]) * Info.LFE
 				) * Level);
 
-			int Right = static_cast<int>((
+			const int Right = static_cast<int>((
 				static_cast<double>(pSrc[Pos * 6 + ChannelMap[AudioDecoder::CHANNEL_6_FR ]]) * Info.Front +
 				static_cast<double>(pSrc[Pos * 6 + ChannelMap[AudioDecoder::CHANNEL_6_BR ]]) * Info.Rear +
 				static_cast<double>(pSrc[Pos * 6 + ChannelMap[AudioDecoder::CHANNEL_6_FC ]]) * Info.Center +
@@ -1300,7 +1303,7 @@ size_t AudioDecoderFilter::MapSurroundChannels(int16_t *pDst, const int16_t *pSr
 				Data[j] = static_cast<double>(pSrc[i * 6 + ChannelMap[j]]);
 
 			for (int j = 0; j < 6; j++) {
-				int Value = static_cast<int>(
+				const int Value = static_cast<int>(
 					Data[0] * m_MixingMatrix.Matrix[j][0] +
 					Data[1] * m_MixingMatrix.Matrix[j][1] +
 					Data[2] * m_MixingMatrix.Matrix[j][2] +
@@ -1334,7 +1337,7 @@ size_t AudioDecoderFilter::MapSurroundChannels(int16_t *pDst, const int16_t *pSr
 
 void AudioDecoderFilter::GainControl(int16_t *pBuffer, size_t Samples, float Gain)
 {
-	static const int Factor = 0x1000;
+	constexpr int Factor = 0x1000;
 	const int Level = static_cast<int>(Gain * static_cast<float>(Factor));
 
 	if (Level != Factor) {
@@ -1343,7 +1346,7 @@ void AudioDecoderFilter::GainControl(int16_t *pBuffer, size_t Samples, float Gai
 		p = pBuffer;
 		pEnd= p + Samples;
 		while (p < pEnd) {
-			int Value = (static_cast<int>(*p) * Level) / Factor;
+			const int Value = (static_cast<int>(*p) * Level) / Factor;
 			*p++ = ClampSample16(Value);
 		}
 	}

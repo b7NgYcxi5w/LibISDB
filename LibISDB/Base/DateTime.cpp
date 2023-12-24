@@ -94,19 +94,6 @@ DateTime::DateTime(const std::tm &Src) noexcept
 }
 
 
-bool DateTime::operator == (const DateTime &rhs) const noexcept
-{
-	return (Year == rhs.Year)
-		&& (Month == rhs.Month)
-		&& (Day == rhs.Day)
-		&& (DayOfWeek == rhs.DayOfWeek)
-		&& (Hour == rhs.Hour)
-		&& (Minute == rhs.Minute)
-		&& (Second == rhs.Second)
-		&& (Millisecond == rhs.Millisecond);
-}
-
-
 bool DateTime::operator < (const DateTime &rhs) const noexcept
 {
 	return Compare(rhs) < 0;
@@ -345,7 +332,7 @@ unsigned long long DateTime::GetLinearMilliseconds() const noexcept
 {
 #ifdef LIBISDB_WINDOWS
 
-	::SYSTEMTIME st = ToSYSTEMTIME();
+	const ::SYSTEMTIME st = ToSYSTEMTIME();
 	::FILETIME ft;
 
 	if (!::SystemTimeToFileTime(&st, &ft))
@@ -370,7 +357,7 @@ bool DateTime::FromLinearSeconds(unsigned long long Seconds) noexcept
 
 #else	// LIBISDB_WINDOWS
 
-	std::time_t Time = Seconds;
+	const std::time_t Time = Seconds;
 	std::tm Tm;
 
 	if (::gmtime_r(&Time, &Tm) == nullptr)
@@ -477,7 +464,8 @@ bool DateTime::ToLocal() noexcept
 {
 #ifdef LIBISDB_WINDOWS
 
-	::SYSTEMTIME UTC = ToSYSTEMTIME(), Local;
+	const ::SYSTEMTIME UTC = ToSYSTEMTIME();
+	::SYSTEMTIME Local;
 
 	if (!::SystemTimeToTzSpecificLocalTime(nullptr, &UTC, &Local))
 		return false;
@@ -489,7 +477,7 @@ bool DateTime::ToLocal() noexcept
 #else	// LIBISDB_WINDOWS
 
 	std::tm Tm = ToTm();
-	std::time_t Time = ::timegm(&Tm);
+	const std::time_t Time = ::timegm(&Tm);
 	if (Time == static_cast<std::time_t>(-1))
 		return false;
 

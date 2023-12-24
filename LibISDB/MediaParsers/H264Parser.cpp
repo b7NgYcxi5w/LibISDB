@@ -34,7 +34,7 @@ namespace LibISDB
 {
 
 
-H264AccessUnit::H264AccessUnit()
+H264AccessUnit::H264AccessUnit() noexcept
 {
 	Reset();
 }
@@ -111,7 +111,7 @@ bool H264AccessUnit::ParseHeader()
 							int LastScale = 8, NextScale = 8;
 							for (int j = 0; j < (i < 6 ? 16 : 64); j++) {
 								if (NextScale != 0) {
-									int DeltaScale = Bitstream.GetSE_V();
+									const int DeltaScale = Bitstream.GetSE_V();
 									NextScale = (LastScale + DeltaScale + 256) % 256;
 									LastScale = NextScale;
 								}
@@ -153,8 +153,8 @@ bool H264AccessUnit::ParseHeader()
 				if (m_Header.SPS.VUI.AspectRatioInfoPresentFlag) {
 					m_Header.SPS.VUI.AspectRatioIDC = static_cast<uint8_t>(Bitstream.GetBits(8));
 					if (m_Header.SPS.VUI.AspectRatioIDC == 255) {
-						m_Header.SPS.VUI.SARWidth = (uint16_t)Bitstream.GetBits(16);
-						m_Header.SPS.VUI.SARHeight = (uint16_t)Bitstream.GetBits(16);
+						m_Header.SPS.VUI.SARWidth = static_cast<uint16_t>(Bitstream.GetBits(16));
+						m_Header.SPS.VUI.SARHeight = static_cast<uint16_t>(Bitstream.GetBits(16));
 					}
 				}
 				m_Header.SPS.VUI.OverscanInfoPresentFlag = Bitstream.GetFlag();
@@ -245,7 +245,7 @@ bool H264AccessUnit::ParseHeader()
 }
 
 
-void H264AccessUnit::Reset()
+void H264AccessUnit::Reset() noexcept
 {
 	m_FoundSPS = false;
 	m_Header = Header();
@@ -373,7 +373,7 @@ bool H264Parser::StoreES(const uint8_t *pData, size_t Size)
 }
 
 
-void H264Parser::Reset()
+void H264Parser::Reset() noexcept
 {
 	MPEGVideoParserBase::Reset();
 
